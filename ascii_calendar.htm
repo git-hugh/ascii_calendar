@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="ASCII Calendar generator" />
+        <meta name="author" content="Hugh Fitzgerald" />
+        <title>Calendar</title>
+		<style>
+			/*
+			@font-face {
+  				font-family: "c437";
+  				src: url("./PerfectDOSVGA437.woff") format('woff');
+			}
+			*/
+			@font-face {
+  				font-family: "c437Win";
+  				src: url("./PerfectDOSVGA437Win.woff") format('woff');
+			}
+
+			body {
+				background:#fff;
+				color:#000;
+			}
+
+			#output {
+				font-smooth: never;
+				display: block;
+				font-family: c437Win,monospace;
+				white-space: pre;
+				margin: 0px;
+				font-size: 8px;
+				line-height: 8px;
+			}
+			#panel {
+				font-smooth: never;
+				display: block;
+				font-family: c437Win,monospace;
+				white-space: pre;
+				margin: 0px;
+				font-size: 8px;
+				line-height: 8px;
+			}
+			#panelhead {
+
+			}
+			#panelbody {
+				display:block;
+			}
+			input {
+				font-family: c437Win,monospace;
+				font-size: 16px;
+				line-height: 18px;
+				border: 1px solid #000;
+			}
+
+			.noselect {
+			  -webkit-touch-callout: none; /* iOS Safari */
+			    -webkit-user-select: none; /* Safari */
+			     -khtml-user-select: none; /* Konqueror HTML */
+			       -moz-user-select: none; /* Old versions of Firefox */
+			        -ms-user-select: none; /* Internet Explorer/Edge */
+			            user-select: none; /* Non-prefixed version, currently
+			                                  supported by Chrome, Edge, Opera and Firefox */
+			}
+
+		</style>
+
+		<script>
+
+				/* Current Output 2023-11-19
+					╔════════════════════╗
+					║November        2023║
+					║M  T  W  T  F  S  S ║
+					╟──┬──┬──┬──┬──┬──┬──╢
+					║  │  │01│02│03│04│05║
+					╟──┼──┼──┼──┼──┼──┼──╢
+					║06│07│08│09│10│11│12║
+					╟──┼──┼──┼──┼──┼──╔══╗
+					║13│14│15│16│17│18║19║
+					╟──┼──┼──┼──┼──┼──╚══╝
+					║20│21│22│23│24│25│26║
+					╟──┼──┼──┼──┼──┼──┼──╢
+					║27│28│29│30│  │  │  ║
+					╟──┼──┼──┼──┼──┼──┼──╢
+					║  │  │  │  │  │  │  ║
+					╚══╧══╧══╧══╧══╧══╧══╝
+
+				*/
+
+
+			let days_text_long =   ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+			let	days_text_short =  ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+			let	months_text_long = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+			let	months_text_short =["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+			let days_in_month = [31,28,31,30,31,30,31,31,30,31,30,31];
+
+			let week_start_sunday = false;
+
+			function cellStruct() {
+				this.x = 0;
+				this.y = 0;
+				this.day = 0;
+				this.value = "";
+			}
+
+			function str_pad_2(str,pad) {
+				if(str.length<2) {
+					str = pad + str;
+				} 
+				return str;
+			}
+			function str_pad_3(str,pad) {
+				if(str.length<2) {
+					str = pad + str;
+				} 
+				if(str.length<3) {
+					str = pad + str;
+				} 
+				return str;
+			}
+
+			function generateCalendarMonthGrid(month_date) {
+
+				start = month_date.getDay();
+				if(week_start_sunday) {
+					//start-=1;
+				} else {
+					start-=1;
+				}
+				if(start<0) {
+					start+=7;
+				}
+				day = 1;
+
+				days_in_month_with_leap = days_in_month[month_date.getMonth()];
+
+				if(month_date.getMonth() == 1 && month_date.getYear()%4==0) {
+					days_in_month_with_leap +=1;
+				}
+				end = days_in_month_with_leap;
+				//end = days_in_month[month_date.getMonth()];
+
+				let grid = new Array();
+				i=0;
+				for(y=0;y<6;y++) {
+					grid[y] = new Array();
+					for(x=0;x<7;x++) {
+						grid[y][x] = new cellStruct();
+						grid[y][x].x = x;
+						grid[y][x].y = y;
+						grid[y][x].value = "  "; //"░░";
+						if(i>=start && day<=end) {
+							grid[y][x].y = y;
+							grid[y][x].day = day;
+							grid[y][x].value = "" + day + "";
+							day++;
+						}
+						i++;
+					}
+				}
+				return grid;
+			}
+
+
+			
+			function str_times(str,times) {
+				out_str = "";
+				for(i=0;i<times;i++) {
+					out_str += str;
+				}
+				return out_str;
+			}
+
+
+			function printCalendarMonthGrid(output_div,month_grid,cell_width,cell_height,highlight_date,highlight) {
+
+
+
+				b = " ";
+				pad = "0";
+				dtl = "╔";
+				dth = "═";
+				dtr = "╗";
+
+				dv = "║";
+
+				dbl = "╚";
+				dbh = "═";
+				dbr = "╝";
+
+				dttr = "╟";
+				dttu = "╧";
+				dttl = "╢";
+
+				sh = "─";
+				sv = "│";
+
+				sttd = "┬"
+				stvh = "┼"
+
+				cell_width = Math.max(cell_width+1,3);
+				cell_height = Math.max(cell_height,1);
+				
+
+				ly = 0;
+
+				cw = (cell_width * 7)+2;
+				ch = (cell_height * 6)+2+3;
+
+
+				month = months_text_long[highlight_date.getMonth()];
+				year = highlight_date.getFullYear();
+				day_label_space = 1;
+				if(cell_width>3) day_label_space = 3;
+				if(cell_width>9) day_label_space = 9;
+
+				lines = new Array();
+				lines[ly++] = dtl + str_times(dth,(cell_width*7)-1) + dtr; //"╔════════════════════╗"
+				lines[ly++] = dv + month + str_times(b,((cell_width*7)-1)-(4+month.length)) + year + dv; //"║July         2023║"
+
+
+				tmp = "";
+				for(cx=0;cx<7;cx++) { //"║S  M  T  W  T  F  S  ║"
+					if(week_start_sunday) {
+						tmp_day = days_text_long[cx].substring(0,Math.min(day_label_space,days_text_long[cx].length));
+					} else {
+						tmp_day = days_text_long[cx+1].substring(0,Math.min(day_label_space,days_text_long[cx+1].length));
+					}
+					tmp += tmp_day + str_times(b,cell_width-tmp_day.length);
+				}
+				lines[ly++] = dv + tmp.substring(0,tmp.length-1) + dv; 
+
+
+
+				// ╟──┬──┬──┬──┬──┬──┬──╢
+				tmp =  str_times(sh,cell_width-1); 
+				lines[ly++] = dttr + str_times(tmp + sttd,6) + tmp + dttl;
+
+				for(dy=0;dy<6;dy++) { // cells 
+					tmp = "";
+					for(cx=0;cx<7;cx++) { // ║  │  │01│02│03│04│05║
+						if(month_grid[dy][cx].value == "") {
+							tmp_day = b + b;
+						} else {
+							tmp_day = str_pad_2(month_grid[dy][cx].value,pad);
+						}
+						tmp += tmp_day + str_times(b,cell_width-3) + sv;
+					}
+					lines[ly++] = dv + tmp.substring(0,tmp.length-1) + dv; 
+
+					// ║  │  │  │  │  │  │  ║
+					tmp =  str_times(b,cell_width-1); 
+					for(cy=1;cy<cell_height;cy++) {
+						lines[ly++] = dv + str_times(tmp + sv,6) + tmp + dv;		
+					}
+
+					// ╟──┼──┼──┼──┼──┼──┼──╢
+					if(dy!=5) {
+						tmp =  str_times(sh,cell_width-1); 
+						lines[ly++] = dttr + str_times(tmp + stvh,6) + tmp + dttl;
+					}
+				}
+
+				// fill gap, unnessary, here.
+				while(ly<(ch-1)) { //║                           ║
+					lines[ly++] = dv + str_times(b,(cell_width*7)-1) + dv;
+				}
+
+				//╚══╧══╧══╧══╧══╧══╧══╝
+				tmp =  str_times(dbh,cell_width-1); 
+				lines[ly++] = dbl + str_times(tmp + dttu,6) + tmp + dbr;
+
+
+
+
+				// highlight_date
+				
+				if(highlight) {
+					for(dy=0;dy<6;dy++) { // cells 
+						for(cx=0;cx<7;cx++) { 
+							if(month_grid[dy][cx].value == highlight_date.getDate()) {
+								ly = (dy*(cell_height+1))+3;
+								sx = (cx*(cell_width));
+
+
+								//"╔════════════════════╗"
+								tmp = dtl + str_times(dth,cell_width-1) + dtr;
+								lines[ly] = lines[ly].substring(0,sx) + tmp + lines[ly].substring(sx+tmp.length);
+								ly++;
+
+
+								for(hi=0;hi<cell_height;hi++) {
+									tmp = dv + lines[ly].substring(sx+1,sx+(cell_width)) + dv;
+									lines[ly] = lines[ly].substring(0,sx) + tmp + lines[ly].substring(sx+tmp.length);
+									ly++;
+								}
+
+
+								tmp = dbl + str_times(dth,cell_width-1) + dbr;
+								lines[ly] = lines[ly].substring(0,sx) + tmp + lines[ly].substring(sx+tmp.length);
+
+							}
+						}
+					}
+				}
+
+				// print lines to html with line breaks.
+				output_div.innerHTML = "";
+				for(ly=0;ly<lines.length;ly++) {
+					output_div.innerHTML += lines[ly] + "\n";
+				}
+			
+			}
+
+
+
+			function generateCalendar() {
+
+				let date_year_value = parseInt(document.getElementById("year_text").innerText);
+				let date_month_value = parseInt(document.getElementById("month_text").innerText)-1;
+				let date_day_value = parseInt(document.getElementById("day_text").innerText);
+
+				let cell_width = parseInt(document.getElementById("cw_text").innerHTML);
+				let cell_height = parseInt(document.getElementById("ch_text").innerHTML);
+
+				output_div = document.getElementById("output");
+				chosen_date = new Date(date_year_value, date_month_value, date_day_value);
+
+				highlight = false;
+				if(document.getElementById("highlight_toggle").innerText == "■") {
+					highlight = true;
+				}
+
+
+				calendar_month_grid = generateCalendarMonthGrid(new Date(date_year_value, date_month_value, 1));
+				printCalendarMonthGrid(output_div,calendar_month_grid,cell_width,cell_height,chosen_date,highlight);
+
+
+				return false;
+			}
+
+
+			function set_year_plus() {
+				value = parseInt(document.getElementById("year_text").innerText) + 1;
+				set_year(value);
+			}
+			function set_year_minus() {
+				value = parseInt(document.getElementById("year_text").innerText) - 1;
+				set_year(value);
+			}
+			function set_year(val) {
+				val = Math.max(val,1900);
+				val = Math.min(val,2100);
+				document.getElementById("year_text").innerText = val;
+				generateCalendar();
+			}
+
+
+			function set_month_plus() {
+				value = parseInt(document.getElementById("month_text").innerText) + 1;
+				set_month(value);
+			}
+			function set_month_minus() {
+				value = parseInt(document.getElementById("month_text").innerText) - 1;
+				set_month(value);
+			}
+			function set_month(val) {
+				val = Math.max(val,1);
+				val = Math.min(val,12);
+				document.getElementById("month_text").innerText = str_pad_2("" + val,"0");
+				generateCalendar();
+			}
+
+
+
+			function set_day_plus() {
+				value = parseInt(document.getElementById("day_text").innerText) + 1;
+				set_day(value);
+			}
+			function set_day_minus() {
+				value = parseInt(document.getElementById("day_text").innerText) - 1;
+				set_day(value);
+			}
+			function set_day(val) {
+				val = Math.max(val,1);
+				val = Math.min(val,31);
+				document.getElementById("day_text").innerText = str_pad_2("" + val,"0");
+				generateCalendar();
+			}
+
+
+
+			function set_cw_plus() {
+				value = parseInt(document.getElementById("cw_text").innerText) + 1;
+				set_cw(value);
+			}
+			function set_cw_minus() {
+				value = parseInt(document.getElementById("cw_text").innerText) - 1;
+				set_cw(value);
+			}
+			function set_cw(val) {
+				val = Math.max(val,2);
+				val = Math.min(val,256);
+				document.getElementById("cw_text").innerText = str_pad_3("" + val,"0");
+				generateCalendar();
+			}
+
+
+			function set_ch_plus() {
+				value = parseInt(document.getElementById("ch_text").innerText) + 1;
+				set_ch(value);
+			}
+			function set_ch_minus() {
+				value = parseInt(document.getElementById("ch_text").innerText) - 1;
+				set_ch(value);
+			}
+			function set_ch(val) {
+				val = Math.max(val,1);
+				val = Math.min(val,256);
+				document.getElementById("ch_text").innerText = str_pad_3("" + val,"0");
+				generateCalendar();
+			}
+			function toggle_highlight() {
+				if(document.getElementById("highlight_toggle").innerText == "■") {
+					document.getElementById("highlight_toggle").innerText = " ";
+				} else {
+					document.getElementById("highlight_toggle").innerText = "■";
+				};
+				generateCalendar();
+			}
+
+
+			function toggle_panel() {
+				document.getElementById("panelbody").style.display = (document.getElementById("panelbody").style.display=="block"?"none":"block");
+			}
+
+
+			function init() {
+
+				var today = new Date();
+				document.getElementById("year_text").innerText = today.getFullYear();
+				document.getElementById("month_text").innerText = str_pad_2(""+(today.getMonth()+1),"0"); 
+				document.getElementById("day_text").innerText = str_pad_2(""+today.getDate(),"0"); 		
+
+				
+
+				document.getElementById("year_plus").addEventListener("click", set_year_plus); 
+				document.getElementById("year_minus").addEventListener("click", set_year_minus);
+				document.getElementById("month_plus").addEventListener("click", set_month_plus); 
+				document.getElementById("month_minus").addEventListener("click", set_month_minus);
+				document.getElementById("day_plus").addEventListener("click", set_day_plus); 
+				document.getElementById("day_minus").addEventListener("click", set_day_minus);
+
+				document.getElementById("cw_plus").addEventListener("click", set_cw_plus); 
+				document.getElementById("cw_minus").addEventListener("click", set_cw_minus);
+				document.getElementById("ch_plus").addEventListener("click", set_ch_plus); 
+				document.getElementById("ch_minus").addEventListener("click", set_ch_minus);
+
+				document.getElementById("highlight_toggle").addEventListener("click", toggle_highlight);
+
+				document.getElementById("panelhead").addEventListener("click", toggle_panel);
+
+				generateCalendar();
+			}
+
+		</script>
+
+
+    </head>
+    <body onload="init()">
+		<div class="container">
+		
+			<div id="panel" class="noselect"><span id="panelhead">
+╔════════════════════════════╗
+║ASCII Calendar              ║
+</span><span id="panelbody">╟────────────────────────────╢
+║Year       Month    Day[<span id="highlight_toggle">■</span>]  ║
+║┌─┬────┬─┐ ┌─┬──┬─┐ ┌─┬──┬─┐║
+║│<span id="year_plus">+</span>│<span id="year_text">2023</span>│<span id="year_minus">-</span>│ │<span id="month_plus">+</span>│<span id="month_text">11</span>│<span id="month_minus">-</span>│ │<span id="day_plus">+</span>│<span id="day_text">02</span>│<span id="day_minus">-</span>│║
+║└─┴────┴─┘ └─┴──┴─┘ └─┴──┴─┘║
+╟────────────────────────────╢
+║Cell W    Cell H            ║
+║┌─┬───┬─┐ ┌─┬───┬─┐         ║
+║│<span id="cw_plus">+</span>│<span id="cw_text">003</span>│<span id="cw_minus">-</span>│ │<span id="ch_plus">+</span>│<span id="ch_text">002</span>│<span id="ch_minus">-</span>│         ║
+║└─┴───┴─┘ └─┴───┴─┘         ║
+</span>╚════════════════════════════╝
+			</div>
+
+			<div id="output">
+			</div>
+		</div>
+	</body>
+</html>
